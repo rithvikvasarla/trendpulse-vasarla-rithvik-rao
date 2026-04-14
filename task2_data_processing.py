@@ -1,36 +1,42 @@
+# Import required library
+import pandas as pd
 
-    import pandas as pd
-# Loading JSON file 
-file_path = "data/trends_20260414.json"
+# STEP 1: Load JSON file
+file_path = "data/trends_20260414.json"  # change date if needed
 
-df = pd.read_json(file_path)
+try:
+    df = pd.read_json(file_path)
+    print(f"Loaded {len(df)} stories from {file_path}")
+except Exception as e:
+    print("Error loading file:", e)
+    exit()
 
-print("Original records:", len(df))
+# STEP 2: Remove duplicates
+df = df.drop_duplicates(subset="post_id")
+print("After removing duplicates:", len(df))
 
-# Checking if at least 100 stories
-if len(df) < 100:
-    print("Not enough stories, rerun Task 1")
+# STEP 3: Remove missing values
+# Drop rows where important fields are missing
+df = df.dropna(subset=["post_id", "title", "score"])
+print("After removing nulls:", len(df))
 
-# Removing duplicate stories
-df = df.drop_duplicates()
-
-# Handles missing values
-df["title"] = df["title"].fillna("No Title")
-df["author"] = df["author"].fillna("Unknown")
-df["score"] = df["score"].fillna(0)
-df["num_comments"] = df["num_comments"].fillna(0)
-
-# Clean text
-df["category"] = df["category"].str.lower()
-df["title"] = df["title"].str.strip()
-
-# Convert types
+# STEP 4: Fix data types
 df["score"] = df["score"].astype(int)
 df["num_comments"] = df["num_comments"].astype(int)
 
-# Saving CSV
-csv_file = file_path.replace(".json", ".csv")
-df.to_csv(csv_file, index=False)
+# STEP 5: Remove low quality stories
+df = df[df["score"] >= 5]
+print("After removing low scores:", len(df))
 
-print("CSV saved:", csv_file)
-print("Final records:", len(df))
+# STEP 6: Clean text (whitespace)
+df["title"] = df["title"].str.strip()
+
+# STEP 7: Save cleaned CSV
+output_file = "data/trends_clean.csv"
+df.to_csv(output_file, index=False)
+
+print(f"\nSaved {len(df)} rows to {output_file}")
+
+# STEP 8: Summary (stories per category)
+print("\nStories per category:")
+print(df["category"].value_counts())
